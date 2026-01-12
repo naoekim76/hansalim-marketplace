@@ -15,29 +15,19 @@ HSLIM2 프로젝트 개발에 필요한 Claude Code 스킬과 플러그인을 �
 - **salime-codegen**: HSLIM2 화면 5-파일 구조 자동 생성
 - **salime-auigrid**: AUIGrid 그리드 라이브러리 사용법 및 코드 수정 지원
 
-상세 정보는 [hslim-plugin README](./plugins/hslim-plugin/README.md)를 참조하세요.
 
 ## 🚀 설치 및 사용 방법
 
 ### 1단계: Marketplace 추가
 ```bash
-/plugin marketplace add naoekim76/hslim-marketplace
+/plugin marketplace add naoekim76/hanslim-marketplace
 ```
 
-### 2단계: 플러그인 설치
+### 2단계: skill 설치
 ```bash
 # 전체 플러그인 설치
-/plugin install hslim-plugin@hslim-marketplace
+/plugin install salime-skills@hansalim-agent-skills
 
-# 또는 특정 스킬만 사용
-/plugin install hslim-plugin@hslim-marketplace --skills salime-codegen
-```
-
-### 3단계: 설치 확인
-```bash
-/help
-# 또는
-What plugins are installed?
 ```
 
 ### 사용 예시
@@ -57,14 +47,9 @@ What plugins are installed?
 hslim-marketplace/
 ├── .claude-plugin/
 │   └── marketplace.json      # 마켓플레이스 설정
-├── plugins/
-│   └── hslim-plugin/        # HSLIM 개발 도구 플러그인
-│       ├── .claude-plugin/
-│       │   └── plugin.json
-│       ├── skills/
-│       │   ├── salime-codegen/
-│       │   └── salime-auigrid/
-│       └── README.md
+│   └── skills/
+│       ├── salime-codegen/
+│       └── salime-auigrid/
 └── README.md
 ```
 
@@ -75,25 +60,6 @@ hslim-marketplace/
 ```bash
 # 최신 버전으로 업데이트
 /plugin update hslim-plugin@hslim-marketplace
-```
-
-## 🤝 기여 방법
-
-1. 새로운 스킬 개발
-2. `plugins/` 디렉토리에 추가
-3. `marketplace.json`에 등록
-4. Pull Request 생성
-
-### 새 스킬 추가 구조
-```
-plugins/
-└── new-plugin/
-    ├── .claude-plugin/
-    │   └── plugin.json
-    ├── skills/
-    │   └── new-skill/
-    │       └── SKILL.md
-    └── README.md
 ```
 
 ## 📋 버전 관리
