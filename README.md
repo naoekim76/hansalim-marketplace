@@ -25,7 +25,6 @@ HSLIM2 프로젝트 개발에 필요한 Claude Code 스킬과 플러그인을 �
 
 ### 2단계: skill 설치
 ```bash
-# 전체 플러그인 설치
 /plugin install salime-skills@hansalim-agent-skills
 
 ```
