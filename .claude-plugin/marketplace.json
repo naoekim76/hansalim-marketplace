@@ -1,0 +1,23 @@
+{
+  "name": "hansalim-agent-skills",
+  "owner": {
+    "name": "jhkim",
+    "email": "tomcat@hansalim.or.kr"
+  },
+  "metadata": {
+    "description": "hansalim agent skills",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "salime-skills",
+      "description": "한살림 통합정보시스템(HSLIM2) 개발 도구 모음 - 코드 생성 및 AUIGrid 그리드 라이브러리 지원",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/salime-auigrid",
+        "./skills/salime-codegen"
+      ]
+    }
+  ]
+}

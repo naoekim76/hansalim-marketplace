@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<%@ taglib prefix="tiles" uri="http://tiles.apache.org/tags-tiles" %>
+<!--
+    @id      : {{ screen_id }}.jsp
+    @title   : {{ screen_title }}
+    @author  : {{ author }}
+    @version : {{ date }}
+    @상세설명  : {{ business_module_upper }} > {{ sub_module }} > {{ screen_title }}
+ -->
+
+<div class="content-wrapper gap-y-3">
+    <header class="content-header">
+        <section class="p-3 xy-between">
+            <div class="xy-center">
+                <button type="button" class="btn-favToggle mr-1"><i class="icon-m favorite"></i><em class="sr-only">즐겨찾기</em></button>
+                <h1 class="content-header--title" id="pageTitle"></h1>
+                <button type="button" class="ctn-btn-sm ctn-btn--secondary text-xs ml-1" id="titleHelp" name="titleHelp">도움말</button>
+            </div>
+            <div class="control-bar page-button" id="pageButton"></div>
+        </section>
+        <!----------------------- 업무영역 start     --------------------->
+        <form name="searchForm" id="searchForm" method="post" action="" onsubmit="return false">
+            <section class="content-filter p-3">
+                <div class="flex-one">
+                    <section class="option-group">
+{% for field in search_fields %}
+                        <!-- {{ field.label }} -->
+                        <div class="option">
+                            <label for="{{ field.field }}" class="label">{{ field.label }}</label>
+                            <input type="text" class="option-input w-ch-8" name="{{ field.field }}" id="{{ field.field }}" data-enterSearchYn=true data-callFunction="fn_inq">
+                            <button class="inputClear" type="button"><i class="icon-s delete"></i></button>
+                        </div>
+{% endfor %}
+                    </section>
+                </div>
+            </section>
+        </form>
+        <!----------------------- 업무영역 end     --------------------->
+    </header>
+
+    <!----------------------- 메인 content start     --------------------->
+{% if layout_type == 'horizontal' %}
+    <main class="content-container table-x gap-x-3">
+        <!---- 좌측: 마스터 그리드 ---->
+        <section class="table-y {{ master_grid_flex|default('flex-one') }}">
+            <nav class="ctn-contents_nav">
+                <div class="xy-center">
+                    <h2 class="ctn-contents_title mr-2-5">{{ screen_title }} 목록</h2>
+                    <span id="master_cnt" class="badge badge-secondary">0건</span>
+                </div>
+            </nav>
+            <div id="divGrdMst" class="table-wrapper"></div>
+        </section>
+
+        <!---- 우측: 디테일 그리드 ---->
+        <section class="table-y {{ detail_form_flex|default('flex-two') }}">
+            <nav class="ctn-contents_nav">
+                <div class="xy-center">
+                    <h2 class="ctn-contents_title mr-2-5">상세 내역</h2>
+                    <span id="detail_cnt" class="badge badge-secondary">0건</span>
+                </div>
+{% if detail_crud_enabled %}
+                <div class="flex">
+                    <button type="button" class="ctn-btn-sm ctn-btn--bd-gray xy-center" onclick="fn_addGridDetail()"><i class="icon-s plus2"></i>행추가</button>
+                    <button type="button" class="ctn-btn-sm ctn-btn--bd-gray xy-center ml-2-5" onclick="fn_delGridDetail()"><i class="icon-s minus2"></i>행삭제</button>
+                </div>
+{% endif %}
+            </nav>
+            <div id="divGrdDtl" class="table-wrapper"></div>
+        </section>
+{% else %}
+    <main class="content-container table-y gap-y-3">
+        <!---- 상단: 마스터 그리드 ---->
+        <section class="table-y {{ master_grid_flex|default('flex-one') }}">
+            <nav class="ctn-contents_nav">
+                <div class="xy-center">
+                    <h2 class="ctn-contents_title mr-2-5">{{ screen_title }} 목록</h2>
+                    <span id="master_cnt" class="badge badge-secondary">0건</span>
+                </div>
+            </nav>
+            <div id="divGrdMst" class="table-wrapper"></div>
+        </section>
+
+        <!---- 하단: 디테일 그리드 ---->
+        <section class="table-y {{ detail_form_flex|default('flex-two') }}">
+            <nav class="ctn-contents_nav">
+                <div class="xy-center">
+                    <h2 class="ctn-contents_title mr-2-5">상세 내역</h2>
+                    <span id="detail_cnt" class="badge badge-secondary">0건</span>
+                </div>
+{% if detail_crud_enabled %}
+                <div class="flex">
+                    <button type="button" class="ctn-btn-sm ctn-btn--bd-gray xy-center" onclick="fn_addGridDetail()"><i class="icon-s plus2"></i>행추가</button>
+                    <button type="button" class="ctn-btn-sm ctn-btn--bd-gray xy-center ml-2-5" onclick="fn_delGridDetail()"><i class="icon-s minus2"></i>행삭제</button>
+                </div>
+{% endif %}
+            </nav>
+            <div id="divGrdDtl" class="table-wrapper"></div>
+        </section>
+{% endif %}
+    <!----------------------- 메인 content end     --------------------->
+</div>
+
+<script type="text/javascript" src="${staticPath}/{{ business_module }}/{{ sub_module }}/<tiles:getAsString name='contents_name' />.js"></script>

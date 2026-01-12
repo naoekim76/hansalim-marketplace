@@ -1,0 +1,212 @@
+/**
+ * Copyright (c) {{ year }} Hansalim<br>
+ * All rights reserved.<br>
+ */
+
+package hslim2.portal.func.{{ business_module }}.{{ sub_module }}.service;
+
+import fo.core.dataaccess.CommonDao;
+import fo.core.model.FrameOneDataset;
+import fo.core.model.Parameters;
+import fo.core.model.factory.ParametersFactory;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+/******************************************************************
+ * <pre>
+ * <b>Description  : {{ screen_title }} Service</b>
+ * package  : hslim2.portal.func.{{ business_module }}.{{ sub_module }}.service
+ * </pre>
+ *
+ * @author   : {{ author }}
+ * @version  : 1.0
+ * <pre>
+ * Modification Information
+ *    수정일            수정자                   수정내용
+ * ------------   ------------------   ----------------------------
+ *  {{ date }}    {{ author }}          최초생성
+ * </pre>
+ * *******************************************************************/
+
+@Service
+public class {{ screen_id }}Service {
+{% if ui_type == 'type2' %}
+
+    private static final String DS_MASTER = "ds_master";
+    private static final String DS_DETAIL = "ds_detail";
+
+    @Autowired
+    private CommonDao commonDao;
+
+    /**
+     * 마스터 목록 조회
+     * @param inParams 입력 파라미터 (검색 조건: {% for field in search_fields %}{{ field.label }}{% if not loop.last %}, {% endif %}{% endfor %})
+     * @return Parameters 조회 결과 데이터셋
+     */
+    public Parameters selectMasterList(Parameters inParams) {
+        Parameters outParams = ParametersFactory.createParameters(inParams);
+
+        // 마스터 목록 조회
+        FrameOneDataset dataset = commonDao.selectDataset("{{ screen_id }}.selectMasterList", inParams);
+        outParams.setFrameOneDataset(DS_MASTER, dataset);
+
+        return outParams;
+    }
+
+    /**
+     * 디테일 목록 조회
+     * @param inParams 입력 파라미터
+     * @return Parameters 조회 결과 데이터셋
+     */
+    public Parameters selectDetailList(Parameters inParams) {
+        Parameters outParams = ParametersFactory.createParameters(inParams);
+
+        // 디테일 목록 조회
+        FrameOneDataset dataset = commonDao.selectDataset("{{ screen_id }}.selectDetailList", inParams);
+        outParams.setFrameOneDataset(DS_DETAIL, dataset);
+
+        return outParams;
+    }
+{% else %}
+
+    private static final String DS_SEARCH = "ds_search";
+
+    @Autowired
+    private CommonDao commonDao;
+
+    /**
+     * {{ screen_title }} 목록 조회
+     * @param inParams 입력 파라미터 (검색 조건: {% for field in search_fields %}{{ field.label }}{% if not loop.last %}, {% endif %}{% endfor %})
+     * @return Parameters 조회 결과 데이터셋
+     */
+    public Parameters get{{ screen_id }}(Parameters inParams) {
+        Parameters outParams = ParametersFactory.createParameters(inParams);
+
+        // {{ screen_title }} 목록 조회
+        outParams.setFrameOneDataset(DS_SEARCH, commonDao.selectDataset("{{ screen_id }}.selectList", inParams));
+
+        return outParams;
+    }
+{% endif %}
+{% if ('C' in crud_type or 'U' in crud_type or 'D' in crud_type) and not detail_crud_enabled %}
+{% if ui_type == 'type2' %}
+
+    /**
+     * {{ screen_title }} 저장
+     * @param inParams 입력 파라미터 (데이터셋: ds_detail)
+     * @return Parameters 저장 결과
+     */
+    public Parameters save{{ screen_id }}(Parameters inParams) {
+        Parameters outParams = ParametersFactory.createParameters(inParams);
+        FrameOneDataset dataset = inParams.getFrameOneDataset(DS_DETAIL);
+
+        if (dataset != null) {
+{% if 'D' in crud_type %}
+            // 삭제 처리
+            for (int i = 0; i < dataset.getDeleteRowCount(); i++) {
+                dataset.setActiveRow(i);
+                commonDao.delete("{{ screen_id }}.delete", dataset);
+            }
+{% endif %}
+            // 등록/수정 처리
+            for (int i = 0; i < dataset.getRowCount(); i++) {
+                dataset.setActiveRow(i);
+                String rowStatus = dataset.getRowStatus(i);
+{% if 'C' in crud_type %}
+                if (fo.core.common.FrameOneConstants.INSERT.equals(rowStatus)) {
+                    commonDao.insert("{{ screen_id }}.insert", dataset);
+                }{% if 'U' in crud_type %} else{% endif %}
+{% endif %}
+{% if 'U' in crud_type %}
+                if (fo.core.common.FrameOneConstants.UPDATE.equals(rowStatus)) {
+                    commonDao.update("{{ screen_id }}.update", dataset);
+                }
+{% endif %}
+            }
+        }
+
+        outParams.setMessage(fo.core.common.FrameOneConstants.MSG_SUCCESS);
+        return outParams;
+    }
+{% else %}
+
+    /**
+     * {{ screen_title }} 저장
+     * @param inParams 입력 파라미터 (form 데이터 + saveMode)
+     * @return Parameters 저장 결과
+     */
+    public Parameters save{{ screen_id }}(Parameters inParams) {
+        Parameters outParams = ParametersFactory.createParameters(inParams);
+
+        String saveMode = (String) inParams.getVariable("saveMode");
+
+{% if 'C' in crud_type %}
+        if ("insert".equals(saveMode)) {
+            commonDao.insert("{{ screen_id }}.insert", inParams);
+        }{% if 'U' in crud_type %} else{% endif %}
+{% endif %}
+{% if 'U' in crud_type %}
+        if ("update".equals(saveMode)) {
+            commonDao.update("{{ screen_id }}.update", inParams);
+        }
+{% endif %}
+
+        outParams.setMessage(fo.core.common.FrameOneConstants.MSG_SUCCESS);
+        return outParams;
+    }
+{% if 'D' in crud_type %}
+
+    /**
+     * {{ screen_title }} 삭제
+     * @param inParams 입력 파라미터 ({{ grid_columns[0].field }})
+     * @return Parameters 삭제 결과
+     */
+    public Parameters delete{{ screen_id }}(Parameters inParams) {
+        Parameters outParams = ParametersFactory.createParameters(inParams);
+
+        commonDao.delete("{{ screen_id }}.delete", inParams);
+
+        outParams.setMessage(fo.core.common.FrameOneConstants.MSG_SUCCESS);
+        return outParams;
+    }
+{% endif %}
+{% endif %}
+{% endif %}
+{% if detail_crud_enabled %}
+
+    /**
+     * 상세 내역 저장 (디테일 그리드 CUD)
+     * @param inParams 입력 파라미터 (데이터셋: ds_detail)
+     * @return Parameters 저장 결과
+     */
+    public Parameters saveDetail(Parameters inParams) {
+        Parameters outParams = ParametersFactory.createParameters(inParams);
+        FrameOneDataset dataset = inParams.getFrameOneDataset(DS_DETAIL);
+
+        if (dataset != null) {
+            // 삭제 처리
+            for (int i = 0; i < dataset.getDeleteRowCount(); i++) {
+                dataset.setActiveRow(i);
+                commonDao.delete("{{ screen_id }}.deleteDetail", dataset);
+            }
+
+            // 등록/수정 처리
+            for (int i = 0; i < dataset.getRowCount(); i++) {
+                dataset.setActiveRow(i);
+                String rowStatus = dataset.getRowStatus(i);
+
+                if (fo.core.common.FrameOneConstants.INSERT.equals(rowStatus)) {
+                    commonDao.insert("{{ screen_id }}.insertDetail", dataset);
+                } else if (fo.core.common.FrameOneConstants.UPDATE.equals(rowStatus)) {
+                    commonDao.update("{{ screen_id }}.updateDetail", dataset);
+                }
+            }
+        }
+
+        outParams.setMessage(fo.core.common.FrameOneConstants.MSG_SUCCESS);
+        return outParams;
+    }
+{% endif %}
+
+}

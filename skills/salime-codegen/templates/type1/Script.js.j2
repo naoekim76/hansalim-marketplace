@@ -1,0 +1,182 @@
+/**
+ * {{ screen_id }}.js
+ * {{ screen_title }}
+ * @author {{ author }}
+ * @since {{ date }}
+ */
+
+// 그리드 객체
+const grdMst = new gfn_gridUtil();
+
+/**
+ * 페이지 초기화
+ */
+$(document).ready(function () {
+    gfn_initComponent('.content-wrapper');
+    fn_init();
+});
+
+/**
+ * 초기화 함수
+ */
+function fn_init() {
+    // 그리드 초기화
+    fn_initMstGrid();
+
+    // 이벤트 바인딩
+    fn_initEvent();
+
+    // 초기 조회
+    fn_inq();
+}
+
+/**
+ * 마스터 그리드 초기화
+ */
+function fn_initMstGrid() {
+    // 컬럼 정의
+    let colModel = [
+{% for column in grid_columns %}
+
+        {
+            dataType: '{{ column.dataType }}',
+            headerText: '{{ column.header }}',
+            width: {{ column.width }},
+            dataField: '{{ column.field }}',
+            align: '{{ column.align }}',
+            editable: {% if 'C' in crud_type or 'U' in crud_type %}true{% else %}false{% endif %},{% if column.renderer %}
+            renderer: {
+                type: "{{ column.renderer.type }}",{% if column.renderer.checkValue %}
+                checkValue: "{{ column.renderer.checkValue }}",
+                unCheckValue: "{{ column.renderer.unCheckValue }}",{% endif %}
+                editable: {{ column.renderer.editable|lower }}
+            },{% endif %}
+            filter: { showIcon: true }
+        }{% if not loop.last %},{% endif %}
+
+{% endfor %}
+
+    ];
+
+    // 그리드 속성 설정
+    let props = {
+        editable: {% if 'C' in crud_type or 'U' in crud_type %}true{% else %}false{% endif %},
+        showRowNumColumn: true,
+        enableFilter: true,
+        localStorageId: PAGE_INFO['MENU_ID'] + "master"
+    };
+
+    // 그리드 생성
+    grdMst.create("#divGrdMst", colModel, props);
+}
+
+/**
+ * 이벤트 초기화
+ */
+function fn_initEvent() {
+    // 조회 버튼 클릭
+    $("#btnInq").on("click", fn_inq);
+
+    // 엔터키 조회
+    $("#searchForm").find("input, select").on("keypress", function(e) {
+        if (e.which === 13) {
+            fn_inq();
+            return false;
+        }
+    });
+}
+
+/**
+ * 조회
+ */
+async function fn_inq() {
+    // 폼 검증
+    if (!$("#searchForm").gfn_checkFormValidation()) { return; }
+
+    // 조회 옵션 설정
+    let options = {
+        svcId: "search",
+        strUrl: "/portal/func/{{ business_module }}/{{ sub_module }}/{{ screen_id }}/search",
+        reqGrid: "",
+        resGrid: "grdMst=ds_search",
+        param: gfn_getFormParam("#searchForm"),
+        pCall: fn_tranCallBack,
+        pLoad: true,
+        pSvcFlag: "SELECT"
+    };
+
+    // 트랜잭션 실행
+    gfn_auiTransaction(options);
+}
+
+/**
+ * 트랜잭션 콜백
+ */
+function fn_tranCallBack(svcId, code, message) {
+    if (code < 0) {
+        gfn_showMessage(message, "error");
+        return;
+    }
+
+    switch (svcId) {
+        case "search":
+            // 조회 건수 표시
+            $("#master_cnt").text(grdMst.getRowCount() + "건");
+            break;
+{% if 'C' in crud_type or 'U' in crud_type or 'D' in crud_type %}
+        case "save":
+            grdMst.clearGridData();
+            fn_inq();
+            break;
+{% endif %}
+    }
+}
+{% if 'C' in crud_type or 'U' in crud_type or 'D' in crud_type %}
+
+/**
+ * 저장
+ */
+async function fn_save() {
+    // 그리드 수정 여부 확인
+    if (!grdMst._isGridEditing()) {
+        gfn_showMessage("MSG.COM.VAL.020");
+        return;
+    }
+
+    // 저장 확인
+    const confirmed = await gfn_showConfirm("MSG.COM.CFM.003");
+    if (!confirmed) return;
+
+    // 저장 옵션 설정
+    let options = {
+        svcId: "save",
+        strUrl: "/portal/func/{{ business_module }}/{{ sub_module }}/{{ screen_id }}/save",
+        reqGrid: "ds_search=grdMst",
+        resGrid: "",
+        pCall: fn_tranCallBack,
+        pLoad: true,
+        pSvcFlag: "SAVE"
+    };
+
+    // 트랜잭션 실행
+    gfn_auiTransaction(options);
+}
+{% endif %}
+{% if 'C' in crud_type %}
+
+/**
+ * 행 추가
+ */
+function fn_addRow() {
+    grdMst.addRow({});
+}
+{% endif %}
+{% if 'D' in crud_type %}
+
+/**
+ * 행 삭제
+ */
+function fn_deleteRow() {
+    grdMst.removeRow(null, false);
+}
+{% endif %}

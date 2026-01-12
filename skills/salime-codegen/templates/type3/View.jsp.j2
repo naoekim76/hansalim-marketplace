@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<%@ taglib prefix="tiles" uri="http://tiles.apache.org/tags-tiles" %>
+<!--
+    @id      : {{ screen_id }}.jsp
+    @title   : {{ screen_title }}
+    @author  : {{ author }}
+    @version : {{ date }}
+    @상세설명  : {{ business_module_upper }} > {{ sub_module }} > {{ screen_title }}
+ -->
+
+<div class="content-wrapper gap-y-3">
+    <header class="content-header">
+        <section class="p-3 xy-between">
+            <div class="xy-center">
+                <button type="button" class="btn-favToggle mr-1"><i class="icon-m favorite"></i><em class="sr-only">즐겨찾기</em></button>
+                <h1 class="content-header--title" id="pageTitle"></h1>
+                <button type="button" class="ctn-btn-sm ctn-btn--secondary text-xs ml-1" id="titleHelp" name="titleHelp">도움말</button>
+            </div>
+            <div class="control-bar page-button" id="pageButton"></div>
+        </section>
+        <!----------------------- 업무영역 start     --------------------->
+        <form name="searchForm" id="searchForm" method="post" action="" onsubmit="return false">
+            <section class="content-filter p-3">
+                <div class="flex-one">
+                    <section class="option-group">
+{% for field in search_fields %}
+                        <!-- {{ field.label }} -->
+                        <div class="option">
+                            <label for="{{ field.field }}" class="label">{{ field.label }}</label>
+                            <input type="text" class="option-input w-ch-8" name="{{ field.field }}" id="{{ field.field }}" data-enterSearchYn=true data-callFunction="fn_inq">
+                            <button class="inputClear" type="button"><i class="icon-s delete"></i></button>
+                        </div>
+{% endfor %}
+                    </section>
+                </div>
+            </section>
+        </form>
+        <!----------------------- 업무영역 end     --------------------->
+    </header>
+
+    <!----------------------- 메인 content start     --------------------->
+{% if layout_type == 'horizontal' %}
+    <main class="content-container table-x gap-x-3 overflow-hidden">
+        <!---- 좌측: 그리드 ---->
+        <section class="table-y {{ master_grid_flex|default('flex-one') }}">
+            <nav class="ctn-contents_nav">
+                <div class="xy-center">
+                    <h2 class="ctn-contents_title mr-2-5">{{ screen_title }} 내역</h2>
+                    <span id="master_cnt" class="badge badge-secondary">0건</span>
+                </div>
+            </nav>
+            <div class="h-full">
+                <div id="divGrdMst" class="table-wrapper h-full"></div>
+            </div>
+        </section>
+
+        <!---- 우측: 상세 정보 폼 ---->
+        <section class="table-y {{ detail_form_flex|default('flex-three') }} overflow-y-auto">
+            <form name="inputForm" id="inputForm" method="post" action="" onsubmit="return false">
+{% for section in detail_sections %}
+                <section class="table-y mb-3">
+                    <nav class="ctn-contents_nav">
+                        <h2 class="ctn-contents_title">{{ section.title }}</h2>
+                    </nav>
+                    <div class="input-grid {{ section.grid_class|default('grid-col-2') }}">
+{% for field in section.fields %}
+                        <div class="item"{% if field.span %} style="grid-column: span {{ field.span }}"{% endif %}>
+                            <span class="item-label">
+                                <label for="{{ field.field }}" class="label">
+{% if field.required %}                                    <i class="asterisk">*</i>
+{% endif %}                                    {{ field.label }}
+                                </label>
+                            </span>
+                            <div class="item-data">
+{% if field.type == 'text' %}
+                                <input type="text" class="option-input w-full text-left" name="{{ field.field }}" id="{{ field.field }}"{% if field.required %} required{% endif %}{% if field.readonly %} readonly{% endif %}{% if field.maxlength %} maxlength="{{ field.maxlength }}"{% endif %}>
+{% elif field.type == 'select' %}
+                                <select name="{{ field.field }}" id="{{ field.field }}" class="option-input w-full"{% if field.required %} required{% endif %}>
+                                    <option value="">선택</option>
+                                </select>
+{% elif field.type == 'date' %}
+                                <input type="text" class="option-input w-full text-left datepicker" name="{{ field.field }}" id="{{ field.field }}"{% if field.required %} required{% endif %}{% if field.readonly %} readonly{% endif %}>
+{% elif field.type == 'checkbox' %}
+                                <input type="checkbox" name="{{ field.field }}" id="{{ field.field }}" value="Y">
+{% elif field.type == 'textarea' %}
+                                <textarea class="option-input w-full" name="{{ field.field }}" id="{{ field.field }}" rows="{{ field.rows|default(3) }}"{% if field.required %} required{% endif %}></textarea>
+{% endif %}
+                            </div>
+                        </div>
+{% endfor %}
+                    </div>
+                </section>
+{% endfor %}
+            </form>
+        </section>
+{% else %}
+    <main class="content-container table-y gap-y-3">
+        <!---- 상단: 그리드 ---->
+        <section class="table-y {{ master_grid_flex|default('flex-one') }}">
+            <nav class="ctn-contents_nav">
+                <div class="xy-center">
+                    <h2 class="ctn-contents_title mr-2-5">{{ screen_title }} 내역</h2>
+                    <span id="master_cnt" class="badge badge-secondary">0건</span>
+                </div>
+            </nav>
+            <div id="divGrdMst" class="table-wrapper"></div>
+        </section>
+
+        <!---- 하단: 상세 정보 폼 ---->
+        <section class="table-y {{ detail_form_flex|default('flex-two') }} overflow-y-auto">
+            <form name="inputForm" id="inputForm" method="post" action="" onsubmit="return false">
+{% for section in detail_sections %}
+                <section class="table-y mb-3">
+                    <nav class="ctn-contents_nav">
+                        <h2 class="ctn-contents_title">{{ section.title }}</h2>
+                    </nav>
+                    <div class="input-grid {{ section.grid_class|default('grid-col-2') }}">
+{% for field in section.fields %}
+                        <div class="item"{% if field.span %} style="grid-column: span {{ field.span }}"{% endif %}>
+                            <span class="item-label">
+                                <label for="{{ field.field }}" class="label">
+{% if field.required %}                                    <i class="asterisk">*</i>
+{% endif %}                                    {{ field.label }}
+                                </label>
+                            </span>
+                            <div class="item-data">
+{% if field.type == 'text' %}
+                                <input type="text" class="option-input w-full text-left" name="{{ field.field }}" id="{{ field.field }}"{% if field.required %} required{% endif %}{% if field.readonly %} readonly{% endif %}{% if field.maxlength %} maxlength="{{ field.maxlength }}"{% endif %}>
+{% elif field.type == 'select' %}
+                                <select name="{{ field.field }}" id="{{ field.field }}" class="option-input w-full"{% if field.required %} required{% endif %}>
+                                    <option value="">선택</option>
+                                </select>
+{% elif field.type == 'date' %}
+                                <input type="text" class="option-input w-full text-left datepicker" name="{{ field.field }}" id="{{ field.field }}"{% if field.required %} required{% endif %}{% if field.readonly %} readonly{% endif %}>
+{% elif field.type == 'checkbox' %}
+                                <input type="checkbox" name="{{ field.field }}" id="{{ field.field }}" value="Y">
+{% elif field.type == 'textarea' %}
+                                <textarea class="option-input w-full" name="{{ field.field }}" id="{{ field.field }}" rows="{{ field.rows|default(3) }}"{% if field.required %} required{% endif %}></textarea>
+{% endif %}
+                            </div>
+                        </div>
+{% endfor %}
+                    </div>
+                </section>
+{% endfor %}
+            </form>
+        </section>
+{% endif %}
+    </main>
+    <!----------------------- 메인 content end     --------------------->
+</div>
+
+<script type="text/javascript" src="${staticPath}/{{ business_module }}/{{ sub_module }}/<tiles:getAsString name='contents_name' />.js"></script>

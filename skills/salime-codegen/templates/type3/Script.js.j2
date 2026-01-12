@@ -1,0 +1,311 @@
+/*
+     @id      : {{ screen_id }}.js
+     @title   : {{ screen_title }}
+     @author  : {{ author }}
+     @version : {{ date }}
+     @상세설명  : {{ business_module_upper }} > {{ sub_module }} > {{ screen_title }}
+*/
+
+/***********************************************************/
+/*            ### 전역 변수 ###                              */
+/***********************************************************/
+
+const grdMst = new gfn_gridUtil();  // 마스터 그리드
+
+// 행 이동 전 위치 정보
+let before_selected_row_id = null;
+let before_selected_row_idx = null;
+let before_selected_col_idx = null;
+
+// 폼 변경 여부 플래그
+let isFormModified = false;
+
+// 화면 로딩 시 작동
+$(function(){
+    gfn_initComponent('.content-wrapper');
+
+    fn_initCombos();      // 콤보 초기화
+    fn_initGrid();        // 그리드 초기화
+    fn_initEvent();       // 이벤트 초기화
+    fn_initGridEvent();   // 그리드 이벤트 초기화
+});
+
+/***********************************************************/
+/*            ### 초기 함수  ###                             */
+/**********************************************************/
+
+/*
+ ### 그리드 초기화 ###
+*/
+function fn_initGrid() {
+    let colModel = [
+{% for col in grid_columns %}
+        {
+            dataType   : '{{ col.dataType }}',
+            headerText : '{{ col.header }}',
+            dataField  : '{{ col.field }}',
+            width      : {{ col.width }},
+            align      : '{{ col.align }}'{% if col.visible is defined and not col.visible %},
+            visible    : false{% endif %}{% if col.renderer %},
+            renderer: {
+                type         : '{{ col.renderer.type }}',
+{% if col.renderer.type == 'CheckBoxEditRenderer' %}
+                checkValue   : '{{ col.renderer.checkValue }}',
+                unCheckValue : '{{ col.renderer.unCheckValue }}',
+                editable     : {{ col.renderer.editable|lower }}
+{% endif %}
+            }
+{% endif %}
+        }{{ "," if not loop.last else "" }}
+{% endfor %}
+    ];
+
+    let props = {
+        showRowNumColumn  : true,
+        editable          : false,
+        fillColumnSizeMode: true,
+        selectFirstRow    : false,
+        localStorageId    : PAGE_INFO['MENU_ID'] + "master",
+    };
+
+    grdMst.create("#divGrdMst", colModel, props);
+}
+
+/***********************************************************/
+/*            ### 콤보 초기화   ###                          */
+/**********************************************************/
+
+function fn_initCombos(){
+    // TODO: 공통코드 조회 및 콤보 바인딩
+}
+
+/***********************************************************/
+/*            ### 이벤트 초기화   ###                        */
+/**********************************************************/
+
+function fn_initEvent () {
+    // 폼 변경 이벤트 감지
+    $("#inputForm").on('change', function() {
+        isFormModified = true;
+    });
+}
+
+/***********************************************************/
+/*            ### 그리드 이벤트   ###                        */
+/**********************************************************/
+
+function fn_initGridEvent(){
+    // 그리드 선택 변경 이벤트
+    grdMst.bind('selectionChange', function(e){
+        $("#inputForm").off('change');
+        fn_grdSelectionChange(e);
+        $("#inputForm").on('change', function() {
+            isFormModified = true;
+        });
+    });
+}
+
+/*
+ 마스터 그리드 선택 시 처리
+ */
+async function fn_grdSelectionChange(e){
+    let selectedItem = grdMst._getRowItem();
+
+    if (!selectedItem) {
+        return;
+    }
+
+    // 선택 행 변경인지 여부
+    if (before_selected_row_id != selectedItem.{{ grid_columns[0].field }}) {
+        // 폼이 수정된 경우 확인
+        if (isFormModified && !await gfn_showConfirm("MSG.COM.CFM.005")) {
+            return;
+        }
+
+        // 폼에 데이터 설정
+        $('#inputForm').jsonToForm(selectedItem);
+        isFormModified = false;
+
+        // 현재 선택된 행 값을 before로 저장
+        before_selected_row_id = selectedItem.{{ grid_columns[0].field }};
+    }
+}
+
+/***********************************************************/
+/*            ###  CALL 함수   ###                          */
+/**********************************************************/
+
+function fn_tranCallBack(svcId, data, errCd, msgTp, msgCd, msgText) {
+    if (errCd != ERR_CD_SUCCESS) {
+        return;
+    }
+
+    switch(svcId) {
+        case 'search':
+            // 그리드 조회 건수 표시
+            $('#master_cnt').text(grdMst.getRowCount() + " 건");
+            // 폼 초기화
+            fn_formClear();
+            break;
+        case 'save':
+            isFormModified = false;
+            // 저장 후 그리드만 재조회 (폼 유지)
+            fn_reloadGrid();
+            break;
+        case 'reload':
+            // 그리드 재조회 시 건수만 표시 (폼 초기화 없음)
+            $('#master_cnt').text(grdMst.getRowCount() + " 건");
+            break;
+        case 'delete':
+            fn_inq();
+            break;
+    }
+}
+
+/*
+ ### 그리드만 재조회 (폼 유지) ###
+*/
+function fn_reloadGrid() {
+    let options = {
+        svcId   : "reload",
+        strUrl  : "/portal/func/{{ business_module }}/{{ sub_module }}/{{ screen_id }}/search",
+        reqGrid : "",
+        resGrid : "grdMst=ds_search",
+        param   : gfn_getFormParam("#searchForm"),
+        pCall   : fn_tranCallBack,
+        pLoad   : true,
+        pSvcFlag: "SELECT",
+    };
+
+    gfn_auiTransaction(options);
+}
+
+/***********************************************************/
+/*            ### 업무 함수   ###                            */
+/**********************************************************/
+
+/*
+ ### 조회 버튼 ###
+*/
+async function fn_inq(){
+    // 폼이 수정된 경우 확인
+    if (isFormModified && !await gfn_showConfirm("MSG.COM.CFM.005")) {
+        return;
+    }
+
+    // 폼 유효성 검사
+    if (!$("#searchForm").gfn_checkFormValidation()) {
+        return;
+    }
+
+    let options = {
+        svcId   : "search",
+        strUrl  : "/portal/func/{{ business_module }}/{{ sub_module }}/{{ screen_id }}/search",
+        reqGrid : "",
+        resGrid : "grdMst=ds_search",
+        param   : gfn_getFormParam("#searchForm"),
+        pCall   : fn_tranCallBack,
+        pLoad   : true,
+        pSvcFlag: "SELECT",
+    };
+
+    gfn_auiTransaction(options);
+}
+
+/*
+ ### 신규 버튼 ###
+*/
+async function fn_new(){
+    // 폼이 수정된 경우 확인
+    if (isFormModified && !await gfn_showConfirm("MSG.COM.CFM.005")) {
+        return;
+    }
+
+    // 폼 초기화
+    fn_formClear();
+
+    // 그리드 선택 해제
+    grdMst.clearSelection();
+    before_selected_row_id = null;
+    before_selected_row_idx = null;
+    before_selected_col_idx = null;
+
+    isFormModified = false;
+}
+
+/*
+ ### 저장 버튼 ###
+*/
+async function fn_save(){
+    // 폼 유효성 검사
+    if (!$("#inputForm").gfn_checkFormValidation()) {
+        return;
+    }
+
+    // 저장 확인
+    if (!await gfn_showConfirm("MSG.COM.CFM.003")) {
+        return;
+    }
+
+    let selectedItem = grdMst._getRowItem();
+
+    // INSERT/UPDATE 구분
+    let saveMode = (selectedItem && selectedItem.{{ grid_columns[0].field }}) ? "update" : "insert";
+
+    let options = {
+        svcId   : "save",
+        strUrl  : "/portal/func/{{ business_module }}/{{ sub_module }}/{{ screen_id }}/save",
+        reqGrid : "",
+        resGrid : "",
+        param   : gfn_getFormParam("#inputForm", { saveMode: saveMode }),
+        pCall   : fn_tranCallBack,
+        pLoad   : true,
+        pSvcFlag: "SAVE",
+    };
+
+    gfn_auiTransaction(options);
+}
+
+/*
+ ### 삭제 버튼 ###
+*/
+async function fn_delete() {
+    let selectedItem = grdMst._getRowItem();
+
+    if (!selectedItem || !selectedItem.{{ grid_columns[0].field }}) {
+        gfn_showMessage("MSG.COM.VAL.001", ["삭제할 행"]);
+        return;
+    }
+
+    // 삭제 확인
+    if (!await gfn_showConfirm("MSG.COM.CFM.001")) {
+        return;
+    }
+
+    let options = {
+        svcId   : "delete",
+        strUrl  : "/portal/func/{{ business_module }}/{{ sub_module }}/{{ screen_id }}/delete",
+        reqGrid : "",
+        resGrid : "",
+        param   : gfn_getFormParam("#inputForm"),
+        pCall   : fn_tranCallBack,
+        pLoad   : true,
+        pSvcFlag: "DELETE",
+    };
+
+    gfn_auiTransaction(options);
+}
+
+/*
+ ### 폼 초기화 ###
+*/
+function fn_formClear() {
+    $("#inputForm")[0].reset();
+    $("#inputForm input[type='checkbox']").prop('checked', false);
+    isFormModified = false;
+
+    // 그리드 선택 정보 초기화
+    before_selected_row_id = null;
+    before_selected_row_idx = null;
+    before_selected_col_idx = null;
+}

@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- {{ screen_title }} SQL -->
+<mapper namespace="{{ screen_id }}">
+{% if ui_type == 'type2' %}
+
+    <!-- 마스터 목록 조회 -->
+    <select id="selectMasterList" resultType="HMap">
+        SELECT /* {{ screen_id }}.selectMasterList - 마스터 목록 조회 */
+{% for column in grid_columns %}
+{% set sql_field = column.sql_field if column.sql_field is defined else column.field %}
+               {{ sql_field }}{% if not loop.last %},{% endif %}{{ ' ' * (20 - sql_field|length) }}/* {{ column.header }} */
+{% endfor %}
+          FROM {{ tables[0] if tables[0] is string else tables[0].name }} {{ tables[0].alias if tables[0] is mapping and tables[0].alias else '' }}
+{% if tables|length > 1 %}
+{% for table in tables[1:] %}
+{% if table is mapping and table.join_condition %}
+         INNER JOIN {{ table.name }} {{ table.alias if table.alias else '' }} ON {{ table.join_condition }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+         WHERE 1 = 1
+{% for field in search_fields %}
+            <if test="{{ field.field }} != null and {{ field.field }} != ''">
+{% if field.sql_condition is defined and field.sql_condition %}
+           AND {{ field.sql_condition }}    /* {{ field.label }} */
+{% else %}
+           AND {{ field.field|upper }} LIKE '%' || #{{'{'}}{{ field.field }}{{'}}'}} || '%'    /* {{ field.label }} */
+{% endif %}
+            </if>
+{% endfor %}
+{% set order_field = grid_columns[0].sql_field if grid_columns[0].sql_field is defined else grid_columns[0].field %}
+         ORDER BY {{ order_field }} ASC
+    </select>
+
+    <!-- 디테일 목록 조회 -->
+    <select id="selectDetailList" resultType="HMap">
+        SELECT /* {{ screen_id }}.selectDetailList - 디테일 목록 조회 */
+{% for column in detail_grid_columns %}
+{% set sql_field = column.sql_field if column.sql_field is defined else column.field %}
+               {{ sql_field }}{% if not loop.last %},{% endif %}{{ ' ' * (20 - sql_field|length) }}/* {{ column.header }} */
+{% endfor %}
+          FROM {{ tables[1] if tables|length > 1 and tables[1] is string else (tables[1].name if tables|length > 1 else tables[0]) }}
+{% set key_field = grid_columns[0].sql_field if grid_columns[0].sql_field is defined else grid_columns[0].field %}
+         WHERE {{ key_field }} = #{{'{'}}{{ grid_columns[0].field|lower }}{{'}'}}
+{% set detail_order_field = detail_grid_columns[1].sql_field if detail_grid_columns|length > 1 and detail_grid_columns[1].sql_field is defined else (detail_grid_columns[1].field if detail_grid_columns|length > 1 else detail_grid_columns[0].field) %}
+         ORDER BY {{ detail_order_field }} ASC
+    </select>
+{% else %}
+
+    <!-- {{ screen_title }} 목록 조회 -->
+    <select id="selectList" resultType="HMap">
+        SELECT /* {{ screen_id }}.selectList - {{ screen_title }} 목록 조회 */
+{% for column in grid_columns %}
+{% set sql_field = column.sql_field if column.sql_field is defined else column.field %}
+               {{ sql_field }}{% if not loop.last or (detail_sections is defined and detail_sections|length > 0) %},{% endif %}{{ ' ' * (20 - sql_field|length) }}/* {{ column.header }} */
+{% endfor %}
+{% if detail_sections is defined and detail_sections|length > 0 %}
+{% set all_fields = [] %}
+{% for column in grid_columns %}
+{% set _ = all_fields.append(column.field) %}
+{% endfor %}
+{% for section in detail_sections %}
+{% for field in section.fields %}
+{% if field.field not in all_fields %}
+{% set _ = all_fields.append(field.field) %}
+               {{ field.field }}{% if not loop.last %},{% endif %}{{ ' ' * (20 - field.field|length) }}/* {{ field.label }} */
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+          FROM {{ tables[0] if tables[0] is string else tables[0].name }} {{ tables[0].alias if tables[0] is mapping and tables[0].alias else '' }}
+{% if tables|length > 1 %}
+{% for table in tables[1:] %}
+{% if table is mapping and table.join_condition %}
+         INNER JOIN {{ table.name }} {{ table.alias if table.alias else '' }} ON {{ table.join_condition }}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+         WHERE 1 = 1
+{% for field in search_fields %}
+            <if test="{{ field.field }} != null and {{ field.field }} != ''">
+{% if field.sql_condition is defined and field.sql_condition %}
+           AND {{ field.sql_condition }}    /* {{ field.label }} */
+{% else %}
+           AND {{ field.field|upper }} LIKE '%' || #{{'{'}}{{ field.field }}{{'}}'}} || '%'    /* {{ field.label }} */
+{% endif %}
+            </if>
+{% endfor %}
+{% set order_field = grid_columns[0].sql_field if grid_columns[0].sql_field is defined else grid_columns[0].field %}
+         ORDER BY {{ order_field }} ASC
+    </select>
+{% endif %}
+{% if 'C' in crud_type %}
+
+    <!-- {{ screen_title }} 등록 -->
+    <insert id="insert">
+        INSERT /* {{ screen_id }}.insert - {{ screen_title }} 등록 */
+        INTO {{ tables[0] if tables[0] is string else tables[0].name }} (
+{% for column in grid_columns %}
+            {{ column.field }}{% if not loop.last or (detail_sections is defined and detail_sections|length > 0) %},{% endif %}
+
+{% endfor %}
+{% if detail_sections is defined and detail_sections|length > 0 %}
+{% set all_fields = [] %}
+{% for column in grid_columns %}
+{% set _ = all_fields.append(column.field) %}
+{% endfor %}
+{% set detail_fields = [] %}
+{% for section in detail_sections %}
+{% for field in section.fields %}
+{% if field.field not in all_fields %}
+{% set _ = detail_fields.append(field) %}
+{% set _ = all_fields.append(field.field) %}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% for field in detail_fields %}
+            {{ field.field }}{% if not loop.last %},{% endif %}
+
+{% endfor %}
+{% endif %}
+        ) VALUES (
+{% for column in grid_columns %}
+            #{{'{'}}{{ column.field }}{{'}'}}{% if not loop.last or (detail_sections is defined and detail_sections|length > 0) %},{% endif %}
+
+{% endfor %}
+{% if detail_sections is defined and detail_sections|length > 0 %}
+{% set all_fields = [] %}
+{% for column in grid_columns %}
+{% set _ = all_fields.append(column.field) %}
+{% endfor %}
+{% for section in detail_sections %}
+{% for field in section.fields %}
+{% if field.field not in all_fields %}
+{% set _ = all_fields.append(field.field) %}
+            #{{'{'}}{{ field.field }}{{'}'}}{% if not loop.last %},{% endif %}
+
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+        )
+    </insert>
+{% endif %}
+{% if 'U' in crud_type %}
+
+    <!-- {{ screen_title }} 수정 -->
+    <update id="update">
+        UPDATE /* {{ screen_id }}.update - {{ screen_title }} 수정 */
+               {{ tables[0] if tables[0] is string else tables[0].name }}
+        SET
+{% for column in grid_columns[1:] %}
+               {{ column.field }} = #{{'{'}}{{ column.field }}{{'}'}}{% if not loop.last or (detail_sections is defined and detail_sections|length > 0) %},{% endif %}
+
+{% endfor %}
+{% if detail_sections is defined and detail_sections|length > 0 %}
+{% set all_fields = [] %}
+{% for column in grid_columns %}
+{% set _ = all_fields.append(column.field) %}
+{% endfor %}
+{% for section in detail_sections %}
+{% for field in section.fields %}
+{% if field.field not in all_fields %}
+{% set _ = all_fields.append(field.field) %}
+               {{ field.field }} = #{{'{'}}{{ field.field }}{{'}'}}{% if not loop.last %},{% endif %}
+
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+        WHERE {{ grid_columns[0].field }} = #{{'{'}}{{ grid_columns[0].field }}{{'}'}}
+    </update>
+{% endif %}
+{% if 'D' in crud_type %}
+
+    <!-- {{ screen_title }} 삭제 -->
+    <delete id="delete">
+        DELETE /* {{ screen_id }}.delete - {{ screen_title }} 삭제 */
+        FROM {{ tables[0] if tables[0] is string else tables[0].name }}
+        WHERE {{ grid_columns[0].field }} = #{{'{'}}{{ grid_columns[0].field }}{{'}'}}
+    </delete>
+{% endif %}
+
+{% if detail_crud_enabled %}
+
+    <!-- 디테일 등록 -->
+    <insert id="insertDetail">
+        INSERT /* {{ screen_id }}.insertDetail - 디테일 등록 */
+          INTO {{ tables[1] if tables|length > 1 and tables[1] is string else (tables[1].name if tables|length > 1 else tables[0]) }} (
+{% for column in detail_grid_columns %}
+            {{ column.field }}{% if not loop.last %},{% endif %}
+
+{% endfor %}
+        ) VALUES (
+{% for column in detail_grid_columns %}
+            #{{'{'}}{{ column.field }}{{'}'}}{% if not loop.last %},{% endif %}
+
+{% endfor %}
+        )
+    </insert>
+
+    <!-- 디테일 수정 -->
+    <update id="updateDetail">
+        UPDATE /* {{ screen_id }}.updateDetail - 디테일 수정 */
+               {{ tables[1] if tables|length > 1 and tables[1] is string else (tables[1].name if tables|length > 1 else tables[0]) }}
+           SET {% for column in detail_grid_columns[2:] %}{{ column.field }} = #{{'{'}}{{ column.field }}{{'}'}}{% if not loop.last %},
+               {% endif %}{% endfor %}
+
+         WHERE {{ detail_grid_columns[0].field }} = #{{'{'}}{{ detail_grid_columns[0].field }}{{'}'}}
+           AND {{ detail_grid_columns[1].field }} = #{{'{'}}{{ detail_grid_columns[1].field }}{{'}'}}
+    </update>
+
+    <!-- 디테일 삭제 -->
+    <delete id="deleteDetail">
+        DELETE /* {{ screen_id }}.deleteDetail - 디테일 삭제 */
+          FROM {{ tables[1] if tables|length > 1 and tables[1] is string else (tables[1].name if tables|length > 1 else tables[0]) }}
+         WHERE {{ detail_grid_columns[0].field }} = #{{'{'}}{{ detail_grid_columns[0].field }}{{'}'}}
+           AND {{ detail_grid_columns[1].field }} = #{{'{'}}{{ detail_grid_columns[1].field }}{{'}'}}
+    </delete>
+{% endif %}
+
+</mapper>

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nplugin.json을 공식 스키마 형식으로 간소화\n\n- skills 배열 제거 \\(skills/ 디렉토리에서 자동 발견\\)\n- metadata 객체 제거\n- 필수 필드만 유지 \\(name, version, description, author, license\\)\n- 이메일 주소 수정 \\(tomcat@hansalim.or.kr\\)\n- Claude Code 플러그인 스키마 준수\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git push:*)"
+    ]
+  }
+}
